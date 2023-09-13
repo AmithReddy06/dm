@@ -1,0 +1,100 @@
+
+------------------------------------------
+
+1.LIST MUSICIAN NAME,TITLE OF THE SONG WHICH HE HAS PLAYED,THE ALBUM IN WHICH 
+SONG HAS OCCURED.
+
+db.songs.aggregate([ 
+{ $lookup: { from: "albums", localField: "title", foreignField: "songs", as: "albums" } },
+{ $unwind: "$musician" },
+{ $lookup: { from: "musician", localField: "musician", foreignField: "_id", as: "musician" } },
+{ $project: { "m_name": { $arrayElemAt: ["$musician.name", 0] },
+"song_title": "$title", 
+"album": { $ifNull: ["$albums.title", []] },
+"_id": 0 } }] );
+
+
+....................................................
+2.)
+
+db.musician.find({albums: []})
+...................................................
+3.)
+db.songs.aggregate([ { $project: { song_title: "$title", num_musicians: { $size: "$musician" } } }, { $match: { num_musicians: { $gt: 3 } } }, { $project: { _id: 0, song_title: 1, num_musicians: 1 } }] );
+
+..............................................
+4.)
+for instruments in each doc:
+db.musician.aggregate([
+  {
+    $unwind: "$instruments2"
+  },
+  {
+    $group: {
+      _id: "$name",
+      instruments: { $addToSet: "$instruments2" },
+      count: { $sum: 1 }
+    }
+  },
+  {
+    $lookup: {
+      from: "instruments2",
+      localField: "instruments",
+      foreignField: "_id",
+      as: "instrumentDetails"
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      musician_name: "$_id",
+      instruments_name: "$instrumentDetails.name",
+      avg_no_instruments: { $divide: ["$count", db.musician.count()] }
+    }
+  }
+]);
+
+
+for each instrument:
+
+db.musician.aggregate([
+  {
+    $unwind: "$instruments2"
+  },
+  {
+    $group: {
+      _id: "$instruments2",
+      musicians: { $addToSet: "$name" }
+    }
+  },
+  {
+    $lookup: {
+      from: "instruments2",
+      localField: "_id",
+      foreignField: "_id",
+      as: "instrumentDetails"
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      instrument_name: { $arrayElemAt: ["$instrumentDetails.name", 0] },
+      musicians: 1,
+      avg_no_musicians: { $avg: { $size: "$musicians" } }
+    }
+  }
+]);
+
+..............................................................................
+5.)
+
+..................................................................
+6.)
+db.musician.find({ "instruments2": { $all: [1,2,3,5,4] } });
+..................................
+
+for 5th:
+retrive album title produced by the producer who plays guitar as well as flute and has produced no of songs greater than the average songs produced by all producers
+
+
+
