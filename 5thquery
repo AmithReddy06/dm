@@ -1,0 +1,32 @@
+db.album.aggregate([
+  {
+    $lookup: {
+      from: "musician",
+      localField: "producer",
+      foreignField: "ssn",
+      as: "producerInfo"
+    }
+  },
+  {
+    $unwind: "$producerInfo"
+  },
+  {
+    $match: {
+      "producerInfo.iuin": { $all: [1, 3] }, // Check if producer plays both guitar and flute (1 for guitar, 3 for flute)
+      $expr: {
+        $gt: [
+          {
+            $size: "$sid" // Calculate the size of the 'sid' array directly
+          },
+          { $avg: { $map: { input: "$sid", as: "s", in: 1 } } } // Use '1' to represent each song
+        ]
+      } // Check if the producer produced more songs than the average
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      title: 1
+    }
+  }
+]);
